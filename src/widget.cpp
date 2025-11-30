@@ -39,6 +39,10 @@ PianoRollWidget::PianoRollWidget(const PianoRollConfig& cfg)
         static_cast<Tick>(cfg.default_clip_bars) *
         4 * static_cast<Tick>(cfg.ticks_per_beat);
 
+    // Center vertically on the initial key (mirrors the Python initial view
+    // that focuses on a musically interesting key range).
+    coords_.center_on_key(cfg.initial_center_key);
+
     // Initialize explored area to the initial viewport.
     explored_min_x_ = vp.x;
     explored_max_x_ = vp.x + vp.width;
