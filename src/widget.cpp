@@ -59,6 +59,11 @@ void PianoRollWidget::set_playback_start_tick(
     Tick tick) noexcept {
     playback_start_tick_ = tick;
     show_playback_start_marker_ = true;
+    if (on_playback_markers_changed_) {
+        on_playback_markers_changed_(playback_start_tick_,
+                                     cue_left_tick_,
+                                     cue_right_tick_);
+    }
 }
 
 void PianoRollWidget::set_cue_markers(Tick left,
@@ -71,6 +76,11 @@ void PianoRollWidget::set_cue_markers(Tick left,
         cue_right_tick_ = left;
     }
     show_cue_markers_ = true;
+    if (on_playback_markers_changed_) {
+        on_playback_markers_changed_(playback_start_tick_,
+                                     cue_left_tick_,
+                                     cue_right_tick_);
+    }
 }
 
 void PianoRollWidget::set_playhead(Tick tick) noexcept {
@@ -958,6 +968,11 @@ void PianoRollWidget::handle_pointer_events() {
             dragging_playback_start_ = false;
             dragging_cue_left_ = false;
             dragging_cue_right_ = false;
+            if (on_playback_markers_changed_) {
+                on_playback_markers_changed_(playback_start_tick_,
+                                             cue_left_tick_,
+                                             cue_right_tick_);
+            }
         }
         return;
     }

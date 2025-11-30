@@ -203,6 +203,19 @@ public:
         on_playhead_changed_ = std::move(cb);
     }
 
+    using PlaybackMarkersChangedCallback =
+        std::function<void(Tick /*start*/,
+                           Tick /*cue_left*/,
+                           Tick /*cue_right*/)>;    
+
+    // Optional callback for when playback start or cue markers change. This
+    // is invoked on host-driven setter calls and when the user drags markers
+    // in the ruler area.
+    void set_playback_markers_changed_callback(
+        PlaybackMarkersChangedCallback cb) noexcept {
+        on_playback_markers_changed_ = std::move(cb);
+    }
+
     using PianoKeyCallback = std::function<void(MidiKey)>;
 
     // Optional callbacks for piano-key presses and releases in the key strip.
@@ -273,6 +286,7 @@ private:
     bool show_cue_markers_{false};
 
     PlayheadChangedCallback on_playhead_changed_{};
+    PlaybackMarkersChangedCallback on_playback_markers_changed_{};
 
     // Piano key callbacks and flash state.
     PianoKeyCallback on_piano_key_pressed_{};
