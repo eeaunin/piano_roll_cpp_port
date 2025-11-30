@@ -465,6 +465,22 @@ void PointerTool::on_mouse_up(MouseButton button,
         return;
     }
 
+    // If we were rectangle-selecting and ended with a zero-area rectangle
+    // (no real drag), treat this as a click in empty space. In that case,
+    // clear the selection for plain clicks (no modifiers), matching the
+    // typical piano-roll behaviour and the Python implementation.
+    if (action_ == Action::RectangleSelection &&
+        notes_ && coords_ &&
+        !mods.ctrl && !mods.shift && !mods.alt) {
+        double x1 = std::min(rect_start_world_x_, rect_end_world_x_);
+        double x2 = std::max(rect_start_world_x_, rect_end_world_x_);
+        double y1 = std::min(rect_start_world_y_, rect_end_world_y_);
+        double y2 = std::max(rect_start_world_y_, rect_end_world_y_);
+        if (x1 == x2 && y1 == y2) {
+            notes_->clear_selection();
+        }
+    }
+
     // If we had a pending toggle request and this ended as a click (no drag
     // action active), perform Ctrl-click toggle semantics.
     if (pending_toggle_on_release_ &&
