@@ -119,8 +119,9 @@ structures; no advanced interaction yet.
 
 - Only one layer (no multi‑layer/double buffering like the Python render
   system). Layering can be added later if needed.
-- No custom scrollbars; the renderer assumes the caller manages viewport
-  size/scroll via `CoordinateSystem`.
+- At the M2 stage there were no custom scrollbars; a Bitwig‑style horizontal
+  `CustomScrollbar` and explored‑area handling were added later as part of the
+  interaction work (see M3 and "Current Status").
 - The renderer is compiled in two modes:
   - Without `PIANO_ROLL_USE_IMGUI`: `PianoRollRenderer::render` is a no‑op
     so the core library can build without Dear ImGui.
@@ -131,14 +132,14 @@ structures; no advanced interaction yet.
 
 **Objective:** Mouse‑based note editing with a minimal but usable UX.
 
-- [ ] `InputState` and `InputHandler` mapping ImGui events to:
+- [x] Mapping Dear ImGui mouse events to `PointerTool` for:
   - [x] Click‑to‑select and rectangle selection (via `PointerTool` in
         `include/piano_roll/interaction.hpp`).
   - [x] Drag‑to‑move notes (with snap using `GridSnapSystem` when provided).
   - [x] Drag‑from‑edge to resize notes (with snap).
   - [x] Double‑click to create/delete notes when the host calls
         `PointerTool::on_double_click`.
-- [ ] Basic keyboard shortcuts:
+- [x] Basic keyboard shortcuts:
   - [x] Delete selected notes (via `KeyboardController`).
   - [x] Select all (via `KeyboardController`).
   - [x] Copy/paste selected notes into an internal clipboard.
@@ -153,6 +154,10 @@ structures; no advanced interaction yet.
   - Ruler and note‑name area pan/zoom gestures are mapped into
     `PianoRollWidget::handle_pointer_events`, with vertical zoom currently
     keeping approximate (not exact) key anchoring.
+- The originally planned standalone `InputState`/`InputHandler` layer has been
+  folded into `PianoRollWidget::handle_pointer_events` and
+  `PianoRollWidget::handle_keyboard_events`, which translate Dear ImGui events
+  into `PointerTool` and `KeyboardController` calls.
 - No multi‑tool system; we currently expose a single pointer/edit tool
   (`PointerTool`) operating on `NoteManager` and `CoordinateSystem`.
 - The interaction layer remains GUI‑agnostic: host code maps GUI events
@@ -171,14 +176,14 @@ structures; no advanced interaction yet.
 
 **Objective:** Make the widget configurable and ready to embed.
 
-- [ ] `PianoRollConfig` struct for:
+- [x] `PianoRollConfig` struct for:
   - [x] Dimensions (piano key width, ruler height, footer height, note‑label width).
-  - [ ] Colours (keys, grid, notes, background).
   - [x] Musical defaults (ticks‑per‑beat, initial clip length, initial centered key).
-- [ ] Presets for:
+  - [x] CC lane defaults (visibility and height).
+- [x] Presets for:
   - [x] “Compact” layout (`PianoRollConfig::compact`).
   - [x] “Spacious” layout (`PianoRollConfig::spacious`).
-- [ ] Hooks for DAW integration:
+- [x] Hooks for DAW integration:
   - [x] Ability to render using an external `NoteManager` and `CoordinateSystem`
         via the overloaded `RenderPianoRollDemo(note_manager, coords, renderer)`
         helper.
@@ -230,6 +235,9 @@ for DAW-style workflows:
   the C++ port currently exposes visual loop regions, playback start markers,
   and cue markers, but expects the DAW transport to update their tick
   positions.
+ - Colours (keys, grid, notes, background) are configured via
+   `PianoRollRenderConfig` rather than `PianoRollConfig`, keeping layout and
+   theme concerns separate in the C++ port.
  - Clip‑colour theming is supported via `PianoRollRenderConfig::apply_clip_color`
    and `PianoRollWidget::set_clip_color`, which approximate
    `UnifiedPianoRoll._update_colors_from_clip_color` for note and marker
