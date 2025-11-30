@@ -263,7 +263,11 @@ void RenderSelectionOverlay(const NoteManager& notes,
 
                 double ppb = coords.pixels_per_beat();
                 Tick snapped_tick = raw_tick;
-                if (snap_system->snap_mode() != SnapMode::Off) {
+                // Shift disables snapping, matching magnetic_snap_tick
+                // semantics and PointerTool::apply_snap.
+                bool shift_held = io.KeyShift;
+                if (!shift_held &&
+                    snap_system->snap_mode() != SnapMode::Off) {
                     auto [snap_tick, snapped_flag] =
                         snap_system->magnetic_snap(raw_tick, ppb);
                     snapped_tick = snapped_flag ? snap_tick : raw_tick;
