@@ -257,7 +257,15 @@ bool PianoRollWidget::selection_bounds(Tick& min_tick,
 void PianoRollWidget::draw() {
 #ifdef PIANO_ROLL_USE_IMGUI
     ImGuiIO& io = ImGui::GetIO();
-    (void)io;
+
+    // Update piano-key flash timer (short visual highlight after presses).
+    if (piano_key_flash_timer_ > 0.0f) {
+        piano_key_flash_timer_ -= io.DeltaTime;
+        if (piano_key_flash_timer_ <= 0.0f) {
+            piano_key_flash_timer_ = 0.0f;
+            has_pressed_piano_key_ = false;
+        }
+    }
 
     // Fit viewport to available content area.
     ImVec2 avail = ImGui::GetContentRegionAvail();
@@ -1308,10 +1316,16 @@ void PianoRollWidget::handle_pointer_events() {
             (void)world_x_pk;
             MidiKey key_pk =
                 coords_.world_y_to_key(world_y_pk);
-            has_pressed_piano_key_ = true;
             pressed_piano_key_ = key_pk;
+            has_pressed_piano_key_ = true;
+            piano_key_pressed_active_ = true;
+            piano_key_flash_timer_ = piano_key_flash_duration_;
+            if (on_piano_key_pressed_) {
+                on_piano_key_pressed_(key_pk);
+            }
         } else {
             has_pressed_piano_key_ = false;
+            piano_key_pressed_active_ = false;
         }
     }
 
@@ -1370,6 +1384,13 @@ void PianoRollWidget::handle_pointer_events() {
                                      local_y,
                                      mods);
         }
+
+         if (left_released && piano_key_pressed_active_) {
+             piano_key_pressed_active_ = false;
+             if (on_piano_key_released_) {
+                 on_piano_key_released_(pressed_piano_key_);
+             }
+         }
     }
 #endif
 }

@@ -189,6 +189,19 @@ public:
         on_playhead_changed_ = std::move(cb);
     }
 
+    using PianoKeyCallback = std::function<void(MidiKey)>;
+
+    // Optional callbacks for piano-key presses and releases in the key strip.
+    // These are useful for MIDI auditioning or external UI feedback.
+    void set_piano_key_pressed_callback(
+        PianoKeyCallback cb) noexcept {
+        on_piano_key_pressed_ = std::move(cb);
+    }
+    void set_piano_key_released_callback(
+        PianoKeyCallback cb) noexcept {
+        on_piano_key_released_ = std::move(cb);
+    }
+
     // Draw the widget inside the current Dear ImGui window. This must be
     // called after an ImGui window is begun. When built without
     // PIANO_ROLL_USE_IMGUI, this function is a no-op.
@@ -246,6 +259,13 @@ private:
     bool show_cue_markers_{false};
 
     PlayheadChangedCallback on_playhead_changed_{};
+
+    // Piano key callbacks and flash state.
+    PianoKeyCallback on_piano_key_pressed_{};
+    PianoKeyCallback on_piano_key_released_{};
+    bool piano_key_pressed_active_{false};
+    float piano_key_flash_duration_{0.15f};
+    float piano_key_flash_timer_{0.0f};
 
     // Scrollbar handler equivalents from Python.
     void handle_scrollbar_scroll(double new_scroll);
