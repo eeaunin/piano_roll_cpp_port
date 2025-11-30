@@ -1,0 +1,3 @@
+/home/claude_code/piano_roll_cpp_port/build/CMakeFiles/rebuild_cache.dir
+/home/claude_code/piano_roll_cpp_port/build/CMakeFiles/edit_cache.dir
+/home/claude_code/piano_roll_cpp_port/build/CMakeFiles/piano_roll.dir
