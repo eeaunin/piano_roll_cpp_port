@@ -134,6 +134,20 @@ public:
         return show_debug_crosshair_;
     }
 
+    // Last clicked grid cell (for debug/host tooling), mirroring the Python
+    // last_clicked_cell behaviour. Returns false if no cell is recorded.
+    bool last_clicked_cell(Tick& tick_start,
+                           Tick& tick_end,
+                           MidiKey& key) const noexcept {
+        if (!has_last_clicked_cell_) {
+            return false;
+        }
+        tick_start = last_clicked_tick_start_;
+        tick_end = last_clicked_tick_end_;
+        key = last_clicked_key_;
+        return true;
+    }
+
     // Visible ranges in tick/key space (for host-side fit/scroll logic).
     std::pair<Tick, Tick> visible_ticks() const noexcept {
         return coords_.visible_tick_range();
