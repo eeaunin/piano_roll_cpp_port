@@ -2,6 +2,7 @@
 
 #include "piano_roll/cc_lane.hpp"
 #include "piano_roll/cc_lane_renderer.hpp"
+#include "piano_roll/config.hpp"
 #include "piano_roll/coordinate_system.hpp"
 #include "piano_roll/custom_scrollbar.hpp"
 #include "piano_roll/grid_snap.hpp"
@@ -26,6 +27,8 @@ namespace piano_roll {
 class PianoRollWidget {
 public:
     PianoRollWidget();
+
+    explicit PianoRollWidget(const PianoRollConfig& config);
 
     // Access to core components for external configuration.
     NoteManager& notes() noexcept { return notes_; }

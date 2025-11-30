@@ -9,18 +9,35 @@
 namespace piano_roll {
 
 PianoRollWidget::PianoRollWidget()
-    : coords_(180.0),
-      snap_(coords_.ticks_per_beat()),
+    : PianoRollWidget(PianoRollConfig{}) {}
+
+PianoRollWidget::PianoRollWidget(const PianoRollConfig& cfg)
+    : coords_(cfg.piano_key_width),
+      snap_(cfg.ticks_per_beat),
       renderer_(config_),
       pointer_(notes_, coords_, &snap_),
       keyboard_(notes_),
       loop_markers_(&coords_,
-                    4 * coords_.ticks_per_beat(),
-                    8 * coords_.ticks_per_beat()) {
+                    4 * cfg.ticks_per_beat,
+                    8 * cfg.ticks_per_beat) {
     // Initial viewport: reasonable default.
     Viewport& vp = coords_.viewport();
     vp.width = 800.0;
     vp.height = 400.0;
+
+    // Apply layout from config.
+    top_padding_ = cfg.top_padding;
+    ruler_height_ = cfg.ruler_height;
+    footer_height_ = cfg.footer_height;
+    note_label_width_ = cfg.note_label_width;
+
+    // Musical defaults and clip bounds.
+    coords_.set_ticks_per_beat(cfg.ticks_per_beat);
+    renderer_.set_ticks_per_beat(cfg.ticks_per_beat);
+    clip_start_tick_ = 0;
+    clip_end_tick_ =
+        static_cast<Tick>(cfg.default_clip_bars) *
+        4 * static_cast<Tick>(cfg.ticks_per_beat);
 
     // Initialize explored area to the initial viewport.
     explored_min_x_ = vp.x;
@@ -33,6 +50,10 @@ PianoRollWidget::PianoRollWidget()
     // Default CC lanes: start with CC1 (mod wheel).
     cc_lanes_.push_back(ControlLane{1});
     active_cc_lane_ = 0;
+
+    // Apply CC lane visibility/height from config.
+    config_.show_cc_lane = cfg.show_cc_lane;
+    config_.cc_lane_height = cfg.cc_lane_height;
 
     // Initialize scrollbar callbacks: keep viewport.x and explored area in sync.
     h_scrollbar_.on_scroll_update = [this](double new_scroll) {

@@ -6,6 +6,7 @@
 #include "piano_roll/types.hpp"
 #include "piano_roll/note.hpp"
 #include "piano_roll/note_manager.hpp"
+#include "piano_roll/config.hpp"
 #include "piano_roll/coordinate_system.hpp"
 #include "piano_roll/grid_snap.hpp"
 #include "piano_roll/render_config.hpp"

@@ -172,12 +172,12 @@ structures; no advanced interaction yet.
 **Objective:** Make the widget configurable and ready to embed.
 
 - [ ] `PianoRollConfig` struct for:
-  - [ ] Dimensions (piano key width, ruler height, footer height).
+  - [x] Dimensions (piano key width, ruler height, footer height, note‑label width).
   - [ ] Colours (keys, grid, notes, background).
-  - [ ] Musical defaults (ticks‑per‑beat, visible key range).
+  - [x] Musical defaults (ticks‑per‑beat, initial clip length, initial centered key).
 - [ ] Presets for:
-  - [ ] “Compact” layout.
-  - [ ] “Spacious” layout.
+  - [x] “Compact” layout (`PianoRollConfig::compact`).
+  - [x] “Spacious” layout (`PianoRollConfig::spacious`).
 - [ ] Hooks for DAW integration:
   - [x] Ability to render using an external `NoteManager` and `CoordinateSystem`
         via the overloaded `RenderPianoRollDemo(note_manager, coords, renderer)`
@@ -186,6 +186,10 @@ structures; no advanced interaction yet.
         `PianoRollWidget::set_playhead_changed_callback`, fired on internal
         playhead updates (ruler clicks, `update_playback`) and host‑driven
         `set_playhead` calls.
+  - [x] Additional callbacks for playback markers
+        (`set_playback_markers_changed_callback`) and piano‑key presses/
+        releases (`set_piano_key_pressed_callback`,
+        `set_piano_key_released_callback`) on `PianoRollWidget`.
 
 ### MIDI CC lane (initial support)
 
