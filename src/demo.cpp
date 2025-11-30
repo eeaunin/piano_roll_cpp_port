@@ -68,6 +68,27 @@ void RenderPianoRollDemo(NoteManager& note_manager,
         }
     }
 
+    // Time signature and debug snapping visuals.
+    {
+        static int beats_per_measure = 4;
+        if (ImGui::SliderInt("Beats per measure",
+                             &beats_per_measure,
+                             1,
+                             16)) {
+            renderer.set_beats_per_measure(beats_per_measure);
+        }
+
+        bool show_zones = renderer.config().show_magnetic_zones;
+        if (ImGui::Checkbox("Show magnetic zones", &show_zones)) {
+            renderer.config().show_magnetic_zones = show_zones;
+        }
+
+        bool show_preview = renderer.config().show_snap_preview;
+        if (ImGui::Checkbox("Show snap preview", &show_preview)) {
+            renderer.config().show_snap_preview = show_preview;
+        }
+    }
+
     // Basic transport controls for playback demonstration.
     {
         float tempo = static_cast<float>(playback.tempo_bpm);
