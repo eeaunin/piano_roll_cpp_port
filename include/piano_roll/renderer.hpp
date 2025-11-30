@@ -20,6 +20,10 @@ public:
         grid_snap_.set_ticks_per_beat(ticks);
     }
 
+    void set_beats_per_measure(int beats) noexcept {
+        grid_snap_.set_beats_per_measure(beats);
+    }
+
     // Optional playhead rendering. When enabled, the renderer draws a vertical
     // line at the given tick position.
     void set_playhead(Tick tick) noexcept {

@@ -171,6 +171,10 @@ public:
     // renderer, preserving bar-relative defaults like clip length.
     void set_ticks_per_beat(int ticks) noexcept;
 
+    // Time-signature support: configure beats per measure for grid/ruler bar
+    // lines, mirroring the Python GridSnapSystem beats_per_measure setting.
+    void set_beats_per_measure(int beats) noexcept;
+
     // MIDI clip boundaries (for ruler brackets and scrollbar fit behaviour).
     void set_clip_bounds(Tick start, Tick end) noexcept;
     std::pair<Tick, Tick> clip_bounds() const noexcept {

@@ -33,7 +33,10 @@ PianoRollWidget::PianoRollWidget(const PianoRollConfig& cfg)
 
     // Musical defaults and clip bounds.
     coords_.set_ticks_per_beat(cfg.ticks_per_beat);
+    snap_.set_ticks_per_beat(cfg.ticks_per_beat);
+    snap_.set_beats_per_measure(cfg.beats_per_measure);
     renderer_.set_ticks_per_beat(cfg.ticks_per_beat);
+    renderer_.set_beats_per_measure(cfg.beats_per_measure);
     clip_start_tick_ = 0;
     clip_end_tick_ =
         static_cast<Tick>(cfg.default_clip_bars) *
@@ -127,6 +130,14 @@ void PianoRollWidget::set_ticks_per_beat(int ticks) noexcept {
     renderer_.set_ticks_per_beat(ticks);
     clip_end_tick_ =
         4 * 4 * static_cast<Tick>(ticks);
+}
+
+void PianoRollWidget::set_beats_per_measure(int beats) noexcept {
+    if (beats <= 0) {
+        return;
+    }
+    snap_.set_beats_per_measure(beats);
+    renderer_.set_beats_per_measure(beats);
 }
 
 void PianoRollWidget::set_clip_bounds(Tick start,

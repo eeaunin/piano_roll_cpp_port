@@ -21,6 +21,7 @@ struct PianoRollConfig {
 
     // Musical defaults
     int ticks_per_beat{480};
+    int beats_per_measure{4};
     int default_clip_bars{4};           // Initial clip length in bars
     MidiKey initial_center_key{60};     // C4
 
@@ -51,4 +52,3 @@ struct PianoRollConfig {
 };
 
 }  // namespace piano_roll
-
