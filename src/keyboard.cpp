@@ -126,13 +126,16 @@ bool KeyboardController::on_key_press(Key key, const ModifierKeys& mods) {
 
         bool moved_any = false;
         std::vector<NoteId> ids = notes_->selected_ids();
-        for (NoteId id : ids) {
-            if (notes_->move_note(id,
-                                  delta_tick,
-                                  delta_key,
-                                  /*record_undo=*/true,
-                                  /*allow_overlap=*/false)) {
-                moved_any = true;
+        if (!ids.empty() && (delta_tick != 0 || delta_key != 0)) {
+            notes_->snapshot_for_undo();
+            for (NoteId id : ids) {
+                if (notes_->move_note(id,
+                                      delta_tick,
+                                      delta_key,
+                                      /*record_undo=*/false,
+                                      /*allow_overlap=*/false)) {
+                    moved_any = true;
+                }
             }
         }
         return moved_any;
@@ -154,8 +157,11 @@ void KeyboardController::handle_delete() {
         }
     }
 
-    for (NoteId id : to_delete) {
-        notes_->remove_note(id, /*record_undo=*/true);
+    if (!to_delete.empty()) {
+        notes_->snapshot_for_undo();
+        for (NoteId id : to_delete) {
+            notes_->remove_note(id, /*record_undo=*/false);
+        }
     }
 }
 
@@ -187,6 +193,7 @@ void KeyboardController::handle_paste() {
     // Simple behaviour: paste copies at their original tick positions.
     // More advanced behaviour (e.g. paste at playhead) can be implemented
     // at a higher layer by adjusting ticks before creating notes.
+    notes_->snapshot_for_undo();
     for (const Note& src : clipboard_) {
         notes_->create_note(src.tick,
                             src.duration,
@@ -194,7 +201,7 @@ void KeyboardController::handle_paste() {
                             src.velocity,
                             src.channel,
                             /*selected=*/true,
-                            /*record_undo=*/true,
+                            /*record_undo=*/false,
                             /*allow_overlap=*/false);
     }
 }
