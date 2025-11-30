@@ -44,10 +44,30 @@ void PianoRollRenderer::render(const CoordinateSystem& coords,
         return;
     }
 
+    // Use ImDrawList channels to approximate per-layer draw lists, so that
+    // background, notes, ruler, and playhead can be rendered in distinct
+    // layers while still sharing a single Dear ImGui draw list. This gives us
+    // predictable z-ordering similar to the Python RenderSystem layers.
+    constexpr int kLayerBackground = 0;
+    constexpr int kLayerNotes = 1;
+    constexpr int kLayerRuler = 2;
+    constexpr int kLayerPlayhead = 3;
+
+    draw_list->ChannelsSplit(4);
+
+    draw_list->ChannelsSetCurrent(kLayerBackground);
     render_background_layer(draw_list, coords, vp, origin, notes);
+
+    draw_list->ChannelsSetCurrent(kLayerNotes);
     render_notes_layer(draw_list, coords, vp, origin, notes);
+
+    draw_list->ChannelsSetCurrent(kLayerRuler);
     render_ruler_layer(draw_list, coords, vp, origin);
+
+    draw_list->ChannelsSetCurrent(kLayerPlayhead);
     render_playhead_layer(draw_list, coords, vp, origin);
+
+    draw_list->ChannelsMerge();
 #else
     (void)coords;
     (void)notes;
@@ -249,7 +269,7 @@ void PianoRollRenderer::render_notes_layer(
                         static_cast<float>(coords.piano_key_width() +
                                            vp.width);
 
-    for (const Note& note : notes.notes()) {
+    auto draw_single_note = [&](const Note& note) {
         double world_x1 = coords.tick_to_world(note.tick);
         double world_x2 = coords.tick_to_world(note.end_tick());
         double world_y = coords.key_to_world_y(note.key);
@@ -268,7 +288,7 @@ void PianoRollRenderer::render_notes_layer(
         x1 = std::max(x1, left_limit);
         x2 = std::min(x2, right_limit);
         if (x2 <= x1) {
-            continue;
+            return;
         }
 
         ImVec2 min{x1, y1};
@@ -318,6 +338,19 @@ void PianoRollRenderer::render_notes_layer(
                 config_.note_corner_radius,
                 0,
                 1.0f);
+        }
+    };
+
+    // Draw non-selected notes first, then selected notes so that selected
+    // notes (and their borders) appear on top of overlapping unselected notes.
+    for (const Note& note : notes.notes()) {
+        if (!note.selected) {
+            draw_single_note(note);
+        }
+    }
+    for (const Note& note : notes.notes()) {
+        if (note.selected) {
+            draw_single_note(note);
         }
     }
 

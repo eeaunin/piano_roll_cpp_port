@@ -299,7 +299,7 @@ At the moment:
 - [x] Initial MIDI CC lane support with `ControlLane`, `RenderControlLane`,
       and CC point editing in `PianoRollWidget`.
 - [x] Serialization helpers for notes and CC lanes.
-- [ ] Multi‑layer render system and full debug overlays from
+- [x] Multi‑layer render system and full debug overlays from
       `render_system.py` are partially ported:
   - [x] Simple spotlight background behind the horizontal span of selected
         notes in `PianoRollRenderer`, with Bitwig‑style vertical edge lines.
@@ -372,9 +372,15 @@ At the moment:
               (tempo slider + play/pause/stop) and a clip‑colour picker that
               calls `PianoRollRenderConfig::apply_clip_color`, making it easy
               to exercise playback and clip‑color theming without a full host.
-  - [ ] Full per‑layer draw‑list separation, z‑indexed note ordering, rich
-        group drag/resize previews, and cell debug overlays remain to be
-        transliterated.
+  - Remaining differences vs. the Python render system:
+        - ImGui render layers are implemented using `ImDrawList` channels
+          rather than separate DearPyGUI drawlists and double buffering.
+        - Note drawing is z‑ordered so that selected notes render above
+          unselected ones, but more advanced per‑clip layering is left to
+          host code if needed.
+        - Rich debug‑only cell overlays from the Python implementation remain
+          out of scope for the C++ port; we keep the lighter cursor line and
+          clicked‑cell highlight for coordinate verification.
 
 When new features are implemented, this file should be updated with:
 
