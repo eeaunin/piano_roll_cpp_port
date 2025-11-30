@@ -78,6 +78,13 @@ struct PianoRollRenderConfig {
     ColorRGBA drag_preview_move_color{0.31f, 0.47f, 0.78f, 0.70f};
     ColorRGBA drag_preview_duplicate_color{0.31f, 0.78f, 0.47f, 0.70f};
 
+    // Magnetic snap debug visualization (optional).
+    bool show_magnetic_zones{false};
+    ColorRGBA magnetic_zone_fill_color{
+        1.0f, 0.0f, 0.0f, 0.06f};  // very faint red
+    ColorRGBA magnetic_zone_line_color{
+        1.0f, 0.0f, 0.0f, 0.40f};  // more visible red line
+
     // CC lane (MIDI continuous controller) area under the notes grid
     bool show_cc_lane{true};
     float cc_lane_height{120.0f};  // pixels

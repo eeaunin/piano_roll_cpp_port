@@ -1,6 +1,7 @@
 #pragma once
 
 #include "piano_roll/coordinate_system.hpp"
+#include "piano_roll/grid_snap.hpp"
 #include "piano_roll/interaction.hpp"
 #include "piano_roll/note_manager.hpp"
 #include "piano_roll/render_config.hpp"
@@ -14,6 +15,7 @@ namespace piano_roll {
 void RenderSelectionOverlay(const NoteManager& notes,
                             const PointerTool& tool,
                             const CoordinateSystem& coords,
-                            const PianoRollRenderConfig& config);
+                            const PianoRollRenderConfig& config,
+                            const GridSnapSystem* snap_system = nullptr);
 
 }  // namespace piano_roll

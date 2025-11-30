@@ -9,7 +9,8 @@ namespace piano_roll {
 void RenderSelectionOverlay(const NoteManager& notes,
                             const PointerTool& tool,
                             const CoordinateSystem& coords,
-                            const PianoRollRenderConfig& config) {
+                            const PianoRollRenderConfig& config,
+                            const GridSnapSystem* snap_system) {
 #ifdef PIANO_ROLL_USE_IMGUI
     ImDrawList* draw_list = ImGui::GetWindowDrawList();
     if (!draw_list) {
@@ -157,11 +158,85 @@ void RenderSelectionOverlay(const NoteManager& notes,
                                      to_color(base));
         }
     }
+
+    // Optional magnetic snap debug zones (Bitwig-style visualization of
+    // magnetic ranges around snap points).
+    if (config.show_magnetic_zones && snap_system) {
+        const Viewport& vp = coords.viewport();
+        auto [visible_start_tick, visible_end_tick] =
+            coords.visible_tick_range();
+
+        double ppb = coords.pixels_per_beat();
+        const SnapDivision& div =
+            (snap_system->snap_mode() == SnapMode::Adaptive)
+                ? snap_system->adaptive_division(ppb,
+                                                 /*for_grid=*/false)
+                : snap_system->snap_division();
+        Tick snap_size = div.ticks;
+        if (snap_size > 0) {
+            Tick aligned_start =
+                (visible_start_tick / snap_size) * snap_size;
+
+            float grid_left_px =
+                static_cast<float>(coords.piano_key_width());
+            float grid_right_px =
+                grid_left_px + static_cast<float>(vp.width);
+            float grid_top_px = 0.0f;
+            float grid_bottom_px =
+                static_cast<float>(vp.height);
+
+            for (Tick t = aligned_start; t <= visible_end_tick;
+                 t += snap_size) {
+                double world_x = coords.tick_to_world(t);
+                auto [sx_local, _] =
+                    coords.world_to_screen(world_x, 0.0);
+                float snap_x =
+                    static_cast<float>(sx_local);
+                if (snap_x < grid_left_px ||
+                    snap_x > grid_right_px) {
+                    continue;
+                }
+
+                const float magnetic_range_px = 8.0f;
+                float zone_left =
+                    snap_x - magnetic_range_px;
+                float zone_right =
+                    snap_x + magnetic_range_px;
+                if (zone_right <= grid_left_px ||
+                    zone_left >= grid_right_px) {
+                    continue;
+                }
+                if (zone_left < grid_left_px)
+                    zone_left = grid_left_px;
+                if (zone_right > grid_right_px)
+                    zone_right = grid_right_px;
+
+                ImVec2 zmin(origin.x + zone_left,
+                            origin.y + grid_top_px);
+                ImVec2 zmax(origin.x + zone_right,
+                            origin.y + grid_bottom_px);
+                draw_list->AddRectFilled(
+                    zmin,
+                    zmax,
+                    to_color(
+                        config.magnetic_zone_fill_color));
+                draw_list->AddLine(
+                    ImVec2(origin.x + snap_x,
+                           origin.y + grid_top_px),
+                    ImVec2(origin.x + snap_x,
+                           origin.y + grid_bottom_px),
+                    to_color(
+                        config.magnetic_zone_line_color),
+                    1.0f);
+            }
+        }
+    }
 #else
     (void)notes;
     (void)tool;
     (void)coords;
     (void)config;
+    (void)snap_system;
 #endif
 }
 

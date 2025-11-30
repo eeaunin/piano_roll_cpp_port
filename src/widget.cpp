@@ -813,7 +813,7 @@ void PianoRollWidget::draw() {
     handle_keyboard_events();
 
     // Selection overlay and CC lane.
-    RenderSelectionOverlay(notes_, pointer_, coords_, config_);
+    RenderSelectionOverlay(notes_, pointer_, coords_, config_, &snap_);
     if (config_.show_cc_lane && active_cc_lane_ >= 0 &&
         active_cc_lane_ < static_cast<int>(cc_lanes_.size())) {
         RenderControlLane(
