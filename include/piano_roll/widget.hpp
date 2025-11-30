@@ -124,6 +124,16 @@ public:
     // Python GridSnapSystem.get_snap_info helper.
     std::string snap_info() const { return snap_.snap_info(); }
 
+    // Debug overlay toggles (crosshair + clicked-cell highlight). These are
+    // primarily useful during development or when comparing against the
+    // Python implementation's debug layers.
+    void set_show_debug_crosshair(bool enabled) noexcept {
+        show_debug_crosshair_ = enabled;
+    }
+    bool show_debug_crosshair() const noexcept {
+        return show_debug_crosshair_;
+    }
+
     // Visible ranges in tick/key space (for host-side fit/scroll logic).
     std::pair<Tick, Tick> visible_ticks() const noexcept {
         return coords_.visible_tick_range();

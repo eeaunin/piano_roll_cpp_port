@@ -357,6 +357,10 @@ void PianoRollWidget::draw() {
                 division_labels[current_div_index];
             snap_.set_snap_division(chosen);
         }
+
+        // Display human-readable snap info (e.g. "Snap: ADAPTIVE (1/16)")
+        // similar to the Python status text.
+        ImGui::TextUnformatted(snap_.snap_info().c_str());
     }
 
     // CC lane selector (if any lanes are present).
