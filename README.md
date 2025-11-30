@@ -22,7 +22,7 @@ The main headers are:
 - `include/piano_roll/coordinate_system.hpp` – `CoordinateSystem` and `Viewport` for tick↔world and key↔world transforms, zoom, and scroll.
 - `include/piano_roll/grid_snap.hpp` – `GridSnapSystem` for adaptive grid and tick snapping, plus ruler label helpers.
 - `include/piano_roll/render_config.hpp` – `PianoRollRenderConfig` colours and geometry (ImGui‑free).
-- `include/piano_roll/renderer.hpp` – `PianoRollRenderer` that draws the piano roll into the current ImGui window when `PIANO_ROLL_USE_IMGUI` is defined.
+- `include/piano_roll/renderer.hpp` – `PianoRollRenderer` that draws the piano roll into the current ImGui window when `PIANO_ROLL_USE_IMGUI` is defined (with optional per‑layer control for background/notes/ruler/playhead).
 - `include/piano_roll/interaction.hpp` – `PointerTool` for mouse‑based note editing (select, drag, resize, rectangle select, double‑click create/delete).
 - `include/piano_roll/keyboard.hpp` – `KeyboardController` for basic shortcuts (select all, delete, copy/paste, undo/redo).
 - `include/piano_roll/overlay.hpp` – `RenderSelectionOverlay` to draw a selection rectangle overlay in ImGui.

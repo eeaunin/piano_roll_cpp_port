@@ -382,6 +382,10 @@ At the moment:
   - Remaining differences vs. the Python render system:
         - ImGui render layers are implemented using `ImDrawList` channels
           rather than separate DearPyGUI drawlists and double buffering.
+        - `PianoRollRenderer` exposes a layer‑selectable `render` overload
+          so hosts can render subsets of layers (background/notes/ruler/
+          playhead) similar to the Python `RenderSystem.render(layers, ...)`
+          API, while still using a single ImGui draw list.
         - Note drawing is z‑ordered so that selected notes render above
           unselected ones, but more advanced per‑clip layering is left to
           host code if needed.

@@ -14,6 +14,19 @@ PianoRollRenderer::PianoRollRenderer(PianoRollRenderConfig config)
 
 void PianoRollRenderer::render(const CoordinateSystem& coords,
                                const NoteManager& notes) {
+    render(coords, notes,
+           /*draw_background=*/true,
+           /*draw_notes=*/true,
+           /*draw_ruler=*/true,
+           /*draw_playhead=*/true);
+}
+
+void PianoRollRenderer::render(const CoordinateSystem& coords,
+                               const NoteManager& notes,
+                               bool draw_background,
+                               bool draw_notes,
+                               bool draw_ruler,
+                               bool draw_playhead) {
 #ifdef PIANO_ROLL_USE_IMGUI
     // Full Dear ImGui rendering path.
     ImGuiWindow* window = ImGui::GetCurrentWindow();
@@ -47,7 +60,8 @@ void PianoRollRenderer::render(const CoordinateSystem& coords,
     // Use ImDrawList channels to approximate per-layer draw lists, so that
     // background, notes, ruler, and playhead can be rendered in distinct
     // layers while still sharing a single Dear ImGui draw list. This gives us
-    // predictable z-ordering similar to the Python RenderSystem layers.
+    // predictable z-ordering similar to the Python RenderSystem layers, while
+    // allowing callers to select a subset of layers.
     constexpr int kLayerBackground = 0;
     constexpr int kLayerNotes = 1;
     constexpr int kLayerRuler = 2;
@@ -56,16 +70,24 @@ void PianoRollRenderer::render(const CoordinateSystem& coords,
     draw_list->ChannelsSplit(4);
 
     draw_list->ChannelsSetCurrent(kLayerBackground);
-    render_background_layer(draw_list, coords, vp, origin, notes);
+    if (draw_background) {
+        render_background_layer(draw_list, coords, vp, origin, notes);
+    }
 
     draw_list->ChannelsSetCurrent(kLayerNotes);
-    render_notes_layer(draw_list, coords, vp, origin, notes);
+    if (draw_notes) {
+        render_notes_layer(draw_list, coords, vp, origin, notes);
+    }
 
     draw_list->ChannelsSetCurrent(kLayerRuler);
-    render_ruler_layer(draw_list, coords, vp, origin);
+    if (draw_ruler) {
+        render_ruler_layer(draw_list, coords, vp, origin);
+    }
 
     draw_list->ChannelsSetCurrent(kLayerPlayhead);
-    render_playhead_layer(draw_list, coords, vp, origin);
+    if (draw_playhead) {
+        render_playhead_layer(draw_list, coords, vp, origin);
+    }
 
     draw_list->ChannelsMerge();
 #else

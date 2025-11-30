@@ -44,6 +44,16 @@ public:
     void render(const CoordinateSystem& coords,
                 const NoteManager& notes);
 
+    // Render a selectable subset of logical layers. This mirrors, in a
+    // lightweight way, the Python RenderSystem's ability to render specific
+    // layers without exposing Dear ImGui drawlists directly.
+    void render(const CoordinateSystem& coords,
+                const NoteManager& notes,
+                bool draw_background,
+                bool draw_notes,
+                bool draw_ruler,
+                bool draw_playhead);
+
 private:
     PianoRollRenderConfig config_;
     GridSnapSystem grid_snap_;
