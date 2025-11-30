@@ -1646,7 +1646,12 @@ void PianoRollWidget::handle_keyboard_events() {
         keyboard_.on_key_press(Key::C, mods);
     }
     if (map_key(ImGuiKey_V, Key::V)) {
-        keyboard_.on_key_press(Key::V, mods);
+        // Ctrl+Shift+V: paste clipboard at playhead tick when available.
+        if (mods.ctrl && mods.shift && renderer_.has_playhead()) {
+            keyboard_.paste_at_tick(renderer_.playhead_tick());
+        } else {
+            keyboard_.on_key_press(Key::V, mods);
+        }
     }
     if (map_key(ImGuiKey_Z, Key::Z)) {
         keyboard_.on_key_press(Key::Z, mods);

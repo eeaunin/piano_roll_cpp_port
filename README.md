@@ -140,6 +140,15 @@ rc.show_magnetic_zones = true;          // show magnetic snap zones
 rc.playhead_auto_scroll = true;         // auto-follow playhead
 ```
 
+Keyboard shortcuts (when internal keyboard handling is enabled) include:
+
+- `Ctrl+A` – select all notes.
+- `Delete` / `Backspace` – delete selected notes.
+- `Ctrl+C` – copy selected notes to the internal clipboard.
+- `Ctrl+V` – paste at original tick positions.
+- `Ctrl+Shift+V` – paste so the earliest copied note aligns with the current
+  playhead tick (if a playhead is set).
+
 If you prefer to handle input in your own system (or share keyboard focus with
 other widgets), you can ask `PianoRollWidget` to render only and wire
 mouse/keyboard events yourself:

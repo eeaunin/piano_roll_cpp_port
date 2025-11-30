@@ -40,6 +40,17 @@ public:
     // Handle a key press event. Returns true if the event was consumed.
     bool on_key_press(Key key, const ModifierKeys& mods);
 
+    // Clipboard helpers.
+    bool has_clipboard() const noexcept {
+        return !clipboard_.empty();
+    }
+
+    // Paste the current clipboard so that the earliest note in the clipboard
+    // starts at target_tick. Returns true if any notes were created. This is
+    // intended for higher-level callers (e.g. PianoRollWidget) that want
+    // "paste at playhead" or similar behaviours.
+    bool paste_at_tick(Tick target_tick);
+
     void set_snap_system(GridSnapSystem* snap) noexcept {
         snap_ = snap;
     }

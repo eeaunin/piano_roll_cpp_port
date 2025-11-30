@@ -206,4 +206,42 @@ void KeyboardController::handle_paste() {
     }
 }
 
+bool KeyboardController::paste_at_tick(Tick target_tick) {
+    if (!notes_ || clipboard_.empty()) {
+        return false;
+    }
+
+    // Find the earliest tick in the clipboard so we can preserve relative
+    // spacing when rebasing to target_tick.
+    Tick min_tick = clipboard_.front().tick;
+    for (const Note& n : clipboard_) {
+        if (n.tick < min_tick) {
+            min_tick = n.tick;
+        }
+    }
+
+    Tick delta = target_tick - min_tick;
+
+    notes_->snapshot_for_undo();
+    bool created_any = false;
+    for (const Note& src : clipboard_) {
+        Tick new_tick = src.tick + delta;
+        if (new_tick < 0) {
+            new_tick = 0;
+        }
+        NoteId id = notes_->create_note(new_tick,
+                                        src.duration,
+                                        src.key,
+                                        src.velocity,
+                                        src.channel,
+                                        /*selected=*/true,
+                                        /*record_undo=*/false,
+                                        /*allow_overlap=*/false);
+        if (id != 0) {
+            created_any = true;
+        }
+    }
+    return created_any;
+}
+
 }  // namespace piano_roll
