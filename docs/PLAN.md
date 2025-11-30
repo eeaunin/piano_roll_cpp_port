@@ -280,6 +280,8 @@ At the moment:
       - `Ctrl+V`: paste clipboard at original tick positions.
       - `Ctrl+Shift+V`: paste clipboard so its earliest note aligns with the
         current playhead tick (when a playhead is active).
+      - `Ctrl+Alt+V`: paste clipboard so its earliest note aligns with the
+        start tick of the last clicked grid cell (when recorded).
     - Snap/grid configuration UI:
       - Snap mode combo (Off/Adaptive/Manual) and snap division selector wired to
         `GridSnapSystem` so snapping and grid lines follow the same musical

@@ -148,6 +148,8 @@ Keyboard shortcuts (when internal keyboard handling is enabled) include:
 - `Ctrl+V` – paste at original tick positions.
 - `Ctrl+Shift+V` – paste so the earliest copied note aligns with the current
   playhead tick (if a playhead is set).
+- `Ctrl+Alt+V` – paste so the earliest copied note aligns with the start tick
+  of the last clicked grid cell (if one is recorded).
 
 If you prefer to handle input in your own system (or share keyboard focus with
 other widgets), you can ask `PianoRollWidget` to render only and wire

@@ -1646,8 +1646,12 @@ void PianoRollWidget::handle_keyboard_events() {
         keyboard_.on_key_press(Key::C, mods);
     }
     if (map_key(ImGuiKey_V, Key::V)) {
+        // Ctrl+Alt+V: paste at last clicked cell's start tick when available.
+        if (mods.ctrl && mods.alt && has_last_clicked_cell_) {
+            keyboard_.paste_at_tick(last_clicked_tick_start_);
+        }
         // Ctrl+Shift+V: paste clipboard at playhead tick when available.
-        if (mods.ctrl && mods.shift && renderer_.has_playhead()) {
+        else if (mods.ctrl && mods.shift && renderer_.has_playhead()) {
             keyboard_.paste_at_tick(renderer_.playhead_tick());
         } else {
             keyboard_.on_key_press(Key::V, mods);
