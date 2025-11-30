@@ -140,6 +140,20 @@ rc.show_magnetic_zones = true;          // show magnetic snap zones
 rc.playhead_auto_scroll = true;         // auto-follow playhead
 ```
 
+If you prefer to handle input in your own system (or share keyboard focus with
+other widgets), you can ask `PianoRollWidget` to render only and wire
+mouse/keyboard events yourself:
+
+```cpp
+// Disable built-in ImGui-based handlers:
+g_piano_roll.set_internal_pointer_enabled(false);
+g_piano_roll.set_internal_keyboard_enabled(false);
+
+// In your event layer, call PointerTool / KeyboardController directly using
+// g_piano_roll.notes(), g_piano_roll.coords(), etc., then call draw() each
+// frame to render the current state.
+```
+
 ## Demo helpers
 
 If you prefer a more manual integration, you can use the lower‑level demo
@@ -160,7 +174,5 @@ With these you are responsible for:
 - More advanced zoom and scroll behaviours (e.g. additional Bitwig‑style
   gestures beyond the current ruler/note‑name pan/zoom and custom scrollbar).
 - Improved clipboard semantics (e.g. paste at playhead or mouse position).
-- Possible multi‑layer/double‑buffered rendering similar to the Python
-  `render_system` for more complex debug/overlay separation.
 - Higher‑level integration hooks for external DAWs (transport/tempo objects,
   clip management) while keeping this library GUI‑ and host‑agnostic.

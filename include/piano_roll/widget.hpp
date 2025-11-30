@@ -200,6 +200,30 @@ public:
                          double tempo_bpm,
                          double delta_seconds) noexcept;
 
+    // Enable or disable the widget's built-in input handling that reads
+    // directly from Dear ImGui:
+    //
+    // - Pointer: mouse-based note and CC editing, ruler/note-name gestures,
+    //   scrollbar interaction, piano-key hover/press, and debug overlays.
+    // - Keyboard: delete/select-all/copy/paste/undo/redo and arrow-key moves.
+    //
+    // Hosts that prefer to drive input from another system can disable these
+    // and instead call the lower-level `PointerTool` / `KeyboardController`
+    // APIs themselves while still using `draw()` for rendering.
+    void set_internal_pointer_enabled(bool enabled) noexcept {
+        internal_pointer_enabled_ = enabled;
+    }
+    bool internal_pointer_enabled() const noexcept {
+        return internal_pointer_enabled_;
+    }
+
+    void set_internal_keyboard_enabled(bool enabled) noexcept {
+        internal_keyboard_enabled_ = enabled;
+    }
+    bool internal_keyboard_enabled() const noexcept {
+        return internal_keyboard_enabled_;
+    }
+
     using PlayheadChangedCallback = std::function<void(Tick)>;
 
     // Optional callback that is invoked whenever the widget updates the
@@ -258,6 +282,9 @@ private:
     bool dragging_playback_start_{false};
     bool dragging_cue_left_{false};
     bool dragging_cue_right_{false};
+
+    bool internal_pointer_enabled_{true};
+    bool internal_keyboard_enabled_{true};
 
     void handle_cc_pointer_events(float local_x,
                                   float local_y,

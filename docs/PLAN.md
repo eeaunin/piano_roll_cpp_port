@@ -382,6 +382,14 @@ At the moment:
           out of scope for the C++ port; we keep the lighter cursor line and
           clicked‑cell highlight for coordinate verification.
 
+- [x] Embeddability / host control:
+  - [x] `PianoRollWidget` exposes toggles to disable its internal pointer and
+        keyboard handlers (`set_internal_pointer_enabled`,
+        `set_internal_keyboard_enabled`), allowing hosts to:
+        - Drive input from an external system while still using `draw()` for
+          rendering.
+        - Or rely on existing ImGui-based handlers for a plug‑and‑play demo.
+
 When new features are implemented, this file should be updated with:
 
 - Which parts of each milestone are complete.

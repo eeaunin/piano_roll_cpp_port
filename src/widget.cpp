@@ -820,8 +820,12 @@ void PianoRollWidget::draw() {
     }
 
     // Pointer, CC lane pointer, and keyboard interactions.
-    handle_pointer_events();
-    handle_keyboard_events();
+    if (internal_pointer_enabled_) {
+        handle_pointer_events();
+    }
+    if (internal_keyboard_enabled_) {
+        handle_keyboard_events();
+    }
 
     // Selection overlay and CC lane.
     RenderSelectionOverlay(notes_, pointer_, coords_, config_, &snap_);
