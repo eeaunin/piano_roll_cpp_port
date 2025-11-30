@@ -118,6 +118,28 @@ cfg.note_fill_color = {0.3f, 0.8f, 0.4f, 1.0f};
 g_piano_roll.set_playhead(0);
 ```
 
+If you want more control over layout and musical defaults, construct the
+widget with a `PianoRollConfig`:
+
+```cpp
+#include "piano_roll/config.hpp"
+
+piano_roll::PianoRollConfig cfg = piano_roll::PianoRollConfig::compact();
+cfg.ticks_per_beat = 480;
+cfg.beats_per_measure = 4;
+cfg.initial_center_key = 60;  // C4
+
+piano_roll::PianoRollWidget g_piano_roll(cfg);
+```
+
+You can also toggle debug visuals and snapping helpers via the config:
+
+```cpp
+auto& rc = g_piano_roll.config();
+rc.show_magnetic_zones = true;          // show magnetic snap zones
+rc.playhead_auto_scroll = true;         // auto-follow playhead
+```
+
 ## Demo helpers
 
 If you prefer a more manual integration, you can use the lower‑level demo
