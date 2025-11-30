@@ -231,6 +231,65 @@ void RenderSelectionOverlay(const NoteManager& notes,
             }
         }
     }
+
+    // Snap preview: draw a vertical line at the nearest snap position under
+    // the mouse cursor, if enabled.
+    if (config.show_snap_preview && snap_system) {
+        ImGuiIO& io = ImGui::GetIO();
+        ImVec2 mouse = io.MousePos;
+
+        ImVec2 item_min = ImGui::GetItemRectMin();
+        ImVec2 item_max = ImGui::GetItemRectMax();
+
+        if (mouse.x >= item_min.x && mouse.x <= item_max.x &&
+            mouse.y >= item_min.y && mouse.y <= item_max.y) {
+            float local_x = mouse.x - item_min.x;
+            float local_y = mouse.y - item_min.y;
+
+            // Only preview in the grid area (right of piano keys and below ruler).
+            float grid_left_px =
+                static_cast<float>(coords.piano_key_width());
+            float grid_top_px = 0.0f;
+            float grid_right_px =
+                grid_left_px + static_cast<float>(coords.viewport().width);
+            float grid_bottom_px =
+                static_cast<float>(coords.viewport().height);
+
+            if (local_x >= grid_left_px && local_x <= grid_right_px &&
+                local_y >= grid_top_px && local_y <= grid_bottom_px) {
+                auto [world_x, /*world_y*/ _] =
+                    coords.screen_to_world(local_x, 0.0);
+                Tick raw_tick = coords.world_to_tick(world_x);
+
+                double ppb = coords.pixels_per_beat();
+                Tick snapped_tick = raw_tick;
+                if (snap_system->snap_mode() != SnapMode::Off) {
+                    auto [snap_tick, snapped_flag] =
+                        snap_system->magnetic_snap(raw_tick, ppb);
+                    snapped_tick = snapped_flag ? snap_tick : raw_tick;
+                }
+
+                double world_x_snapped =
+                    coords.tick_to_world(snapped_tick);
+                auto [sx_local, _y_local] =
+                    coords.world_to_screen(world_x_snapped, 0.0);
+                float snap_x =
+                    static_cast<float>(sx_local);
+
+                if (snap_x >= grid_left_px &&
+                    snap_x <= grid_right_px) {
+                    float x = origin.x + snap_x;
+                    float y1 = origin.y + grid_top_px;
+                    float y2 = origin.y + grid_bottom_px;
+                    draw_list->AddLine(
+                        ImVec2(x, y1),
+                        ImVec2(x, y2),
+                        to_color(config.snap_preview_color),
+                        1.0f);
+                }
+            }
+        }
+    }
 #else
     (void)notes;
     (void)tool;

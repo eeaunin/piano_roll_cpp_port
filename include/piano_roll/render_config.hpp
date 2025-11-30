@@ -85,6 +85,12 @@ struct PianoRollRenderConfig {
     ColorRGBA magnetic_zone_line_color{
         1.0f, 0.0f, 0.0f, 0.40f};  // more visible red line
 
+    // Snap preview visualization: when enabled, draws a subtle vertical
+    // preview line at the nearest snap position under the mouse cursor,
+    // approximating the Python show_snap_preview behaviour.
+    bool show_snap_preview{false};
+    ColorRGBA snap_preview_color{1.0f, 1.0f, 1.0f, 0.45f};
+
     // CC lane (MIDI continuous controller) area under the notes grid
     bool show_cc_lane{true};
     float cc_lane_height{120.0f};  // pixels
