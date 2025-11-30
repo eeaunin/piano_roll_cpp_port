@@ -371,6 +371,50 @@ void PointerTool::on_mouse_move(double screen_x,
             break;
         }
 
+        // Constrain group move so that the entire selection stays within
+        // valid MIDI/tick ranges, matching the keyboard move semantics and
+        // avoiding per-note clamping that would distort relative spacing.
+        const auto& all_notes = notes_->notes();
+        if (delta_key != 0) {
+            int min_key = 127;
+            int max_key = 0;
+            bool any = false;
+            for (const Note& n : all_notes) {
+                if (!n.selected) {
+                    continue;
+                }
+                any = true;
+                if (n.key < min_key) min_key = n.key;
+                if (n.key > max_key) max_key = n.key;
+            }
+            if (any) {
+                if (max_key + delta_key > 127 ||
+                    min_key + delta_key < 0) {
+                    break;
+                }
+            }
+        }
+        if (delta_tick != 0) {
+            Tick min_tick = 0;
+            bool any = false;
+            for (const Note& n : all_notes) {
+                if (!n.selected) {
+                    continue;
+                }
+                if (!any) {
+                    min_tick = n.tick;
+                    any = true;
+                } else if (n.tick < min_tick) {
+                    min_tick = n.tick;
+                }
+            }
+            if (any) {
+                if (min_tick + delta_tick < 0) {
+                    break;
+                }
+            }
+        }
+
         if (!edit_snapshot_taken_ && notes_) {
             notes_->snapshot_for_undo();
             edit_snapshot_taken_ = true;
