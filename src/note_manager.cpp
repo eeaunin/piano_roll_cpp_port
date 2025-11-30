@@ -196,6 +196,11 @@ const Note* NoteManager::note_at(Tick tick, MidiKey key) const noexcept {
             continue;
         }
         const Note& note = notes_[note_index];
+        // Notes are sorted by start tick within each key; we can break once
+        // we pass the target tick since later notes cannot contain it.
+        if (note.tick > tick) {
+            break;
+        }
         if (note.contains_tick(tick)) {
             return &note;
         }
@@ -224,7 +229,12 @@ std::vector<Note*> NoteManager::notes_in_range(Tick start_tick,
                 continue;
             }
             Note& note = notes_[note_index];
-            if (note.tick < end_tick && note.end_tick() > start_tick) {
+            // Per-key indices are sorted by note start tick, so we can stop
+            // once we reach notes that start at or after end_tick.
+            if (note.tick >= end_tick) {
+                break;
+            }
+            if (note.end_tick() > start_tick) {
                 result.push_back(&note);
             }
         }
@@ -254,7 +264,10 @@ std::vector<const Note*> NoteManager::notes_in_range(Tick start_tick,
                 continue;
             }
             const Note& note = notes_[note_index];
-            if (note.tick < end_tick && note.end_tick() > start_tick) {
+            if (note.tick >= end_tick) {
+                break;
+            }
+            if (note.end_tick() > start_tick) {
                 result.push_back(&note);
             }
         }
@@ -371,6 +384,20 @@ void NoteManager::rebuild_indexes() {
         Note& note = notes_[index];
         id_to_index_[note.id] = index;
         spatial_index_[note.key].push_back(index);
+    }
+
+    // Keep per-key index sorted by note start tick so that queries can
+    // short-circuit once ticks exceed the requested range.
+    for (auto& [key, indices] : spatial_index_) {
+        (void)key;
+        std::sort(indices.begin(),
+                  indices.end(),
+                  [this](std::size_t a, std::size_t b) {
+                      if (a >= notes_.size() || b >= notes_.size()) {
+                          return a < b;
+                      }
+                      return notes_[a].tick < notes_[b].tick;
+                  });
     }
 }
 

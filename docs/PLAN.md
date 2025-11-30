@@ -91,10 +91,11 @@ notes and map between ticks/keys and pixels.
 **Deviations from Python implementation (M1):**
 
 - IDs are simple integral types (`NoteId`) instead of UUID strings.
-- Interval‑tree optimizations are not implemented; we use a straightforward
-  per‑key index similar to `NoteManager`’s dictionary.
-- Overlap checks and range queries are implemented per key but use linear scans
-  within each key’s note list.
+- Interval‑tree optimizations are not implemented; instead we use a
+  straightforward per‑key index stored in tick‑sorted order, with queries
+  short‑circuiting once note start ticks exceed the requested range.
+- Overlap checks and range queries are implemented per key using these
+  tick‑sorted lists rather than a full interval tree.
 - No DearPyGUI or Dear ImGui calls appear in this layer; it is purely
   logic/model code.
 
