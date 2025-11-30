@@ -158,9 +158,14 @@ structures; no advanced interaction yet.
 - The interaction layer remains GUI‑agnostic: host code maps GUI events
   (e.g. Dear ImGui mouse events) to `PointerTool` calls and uses
   `RenderSelectionOverlay` for the rectangle visualization.
-- Undo/redo integration for drag/resize is not wired yet; interactions use
-  `NoteManager` without recording undo history, leaving command/undo wiring to
-  a higher‑level DAW integration layer.
+- Undo/redo integration for pointer and keyboard edits now uses
+  `NoteManager`'s snapshot‑based stacks:
+  - Pointer drags/resizes (including Ctrl+drag duplication) take a single
+    snapshot at the start of the gesture and apply changes with
+    `record_undo=false`, so each gesture is one undo step.
+  - Double‑click create/delete uses `record_undo=true`.
+  - Keyboard move/delete/paste operations group their edits into single undo
+    steps via `NoteManager::snapshot_for_undo`.
 
 ### M4: Configuration and presets
 
