@@ -175,6 +175,11 @@ private:
     bool is_duplicating_{false};
     std::vector<NoteId> drag_original_selection_;
 
+    // Tracks whether we've already captured an undo snapshot for the current
+    // drag/resize interaction, so we can group the whole gesture into a
+    // single undo step.
+    bool edit_snapshot_taken_{false};
+
     // Drag threshold in pixels (local screen space) before we commit to a
     // drag/resize from a click, used to avoid accidental drags from tiny
     // movements.

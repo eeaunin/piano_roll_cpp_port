@@ -359,6 +359,10 @@ bool NoteManager::redo() {
     return true;
 }
 
+void NoteManager::snapshot_for_undo() {
+    push_undo_state();
+}
+
 void NoteManager::rebuild_indexes() {
     id_to_index_.clear();
     spatial_index_.clear();
@@ -401,4 +405,3 @@ NoteId NoteManager::allocate_id() {
 }
 
 }  // namespace piano_roll
-

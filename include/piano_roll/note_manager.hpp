@@ -86,6 +86,12 @@ public:
     bool undo();
     bool redo();
 
+    // Explicitly capture the current note/selection state for undo. This is
+    // useful for grouping multi-step edits (e.g. drags/resizes) into a single
+    // undo step when the caller wants to drive edits without per-call
+    // record_undo flags.
+    void snapshot_for_undo();
+
 private:
     std::vector<Note> notes_;
     std::unordered_map<NoteId, std::size_t> id_to_index_;
@@ -106,4 +112,3 @@ private:
 };
 
 }  // namespace piano_roll
-

@@ -213,6 +213,10 @@ void PointerTool::on_mouse_down(MouseButton button,
         is_duplicating_ = false;
         drag_original_selection_.clear();
         if (enable_ctrl_drag_duplicate_ && mods.ctrl) {
+            if (!edit_snapshot_taken_ && notes_) {
+                notes_->snapshot_for_undo();
+                edit_snapshot_taken_ = true;
+            }
             drag_original_selection_ = notes_->selected_ids();
             if (!drag_original_selection_.empty()) {
                 std::vector<NoteId> new_ids;
@@ -367,6 +371,11 @@ void PointerTool::on_mouse_move(double screen_x,
             break;
         }
 
+        if (!edit_snapshot_taken_ && notes_) {
+            notes_->snapshot_for_undo();
+            edit_snapshot_taken_ = true;
+        }
+
         // Move all selected notes by the same delta, matching the Python
         // behaviour where dragging a selected note moves the whole group.
         std::vector<NoteId> ids = notes_->selected_ids();
@@ -425,6 +434,11 @@ void PointerTool::on_mouse_move(double screen_x,
 
         if (new_tick_right <= new_tick_left) {
             return;
+        }
+
+        if (!edit_snapshot_taken_ && notes_) {
+            notes_->snapshot_for_undo();
+            edit_snapshot_taken_ = true;
         }
 
         // Update note tick/duration directly through NoteManager.
@@ -509,6 +523,7 @@ void PointerTool::on_mouse_up(MouseButton button,
     is_duplicating_ = false;
     pending_click_ = false;
     pending_toggle_on_release_ = false;
+    edit_snapshot_taken_ = false;
 }
 
 void PointerTool::on_double_click(MouseButton button,
@@ -528,7 +543,7 @@ void PointerTool::on_double_click(MouseButton button,
     // If clicking an existing note: delete it.
     Note* note = notes_->note_at(tick, key);
     if (note) {
-        notes_->remove_note(note->id, /*record_undo=*/false);
+        notes_->remove_note(note->id, /*record_undo=*/true);
         return;
     }
 
@@ -549,7 +564,7 @@ void PointerTool::on_double_click(MouseButton button,
                         /*velocity=*/100,
                         /*channel=*/0,
                         /*selected=*/true,
-                        /*record_undo=*/false,
+                        /*record_undo=*/true,
                         /*allow_overlap=*/false);
 }
 
