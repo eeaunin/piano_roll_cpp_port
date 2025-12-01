@@ -224,6 +224,17 @@ public:
         return internal_keyboard_enabled_;
     }
 
+    // Hide inline ImGui controls (zoom slider, snap combo, CC lane selector)
+    // when the widget is embedded in a host panel that provides its own chrome.
+    // When hidden, these controls don't consume space at the top of the widget,
+    // and the canvas starts directly at the canvas rect origin.
+    void set_inline_controls_visible(bool visible) noexcept {
+        inline_controls_visible_ = visible;
+    }
+    bool inline_controls_visible() const noexcept {
+        return inline_controls_visible_;
+    }
+
     using PlayheadChangedCallback = std::function<void(Tick)>;
 
     // Optional callback that is invoked whenever the widget updates the
@@ -265,6 +276,20 @@ public:
     // PIANO_ROLL_USE_IMGUI, this function is a no-op.
     void draw();
 
+    // Explicit canvas rect (screen-space) provided by the host. When set,
+    // the widget will render and handle input within this rect instead of
+    // using ImGui::GetContentRegionAvail() / the current cursor position.
+    void set_canvas_rect(float x,
+                         float y,
+                         float width,
+                         float height) noexcept;
+
+    // Draw the widget into a specific screen-space rectangle within the
+    // current ImGui window. This is useful for hosts that manage layout
+    // themselves (e.g. split-panel systems) and want the piano roll to
+    // occupy an exact region without creating additional ImGui windows.
+    void draw_in_rect(float x, float y, float width, float height);
+
 private:
     NoteManager notes_;
     CoordinateSystem coords_;
@@ -285,6 +310,7 @@ private:
 
     bool internal_pointer_enabled_{true};
     bool internal_keyboard_enabled_{true};
+    bool inline_controls_visible_{true};
 
     void handle_cc_pointer_events(float local_x,
                                   float local_y,
@@ -387,6 +413,20 @@ private:
     MidiKey hovered_piano_key_{60};
     bool has_pressed_piano_key_{false};
     MidiKey pressed_piano_key_{60};
+
+    // Explicit canvas rect supplied by host (screen space). When valid, this
+    // controls the origin and size of the ImGui canvas used by the widget.
+    double canvas_origin_x_{0.0};
+    double canvas_origin_y_{0.0};
+    double canvas_width_{0.0};
+    double canvas_height_{0.0};
+    bool canvas_rect_valid_{false};
+
+    // Optional override for the viewport size used during draw(). When
+    // zero, the widget uses ImGui::GetContentRegionAvail(); when set by
+    // draw_in_rect(), the given width/height are used instead.
+    double forced_width_{0.0};
+    double forced_height_{0.0};
 };
 
 }  // namespace piano_roll

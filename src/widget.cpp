@@ -300,6 +300,17 @@ bool PianoRollWidget::selection_bounds(Tick& min_tick,
     return any_selected;
 }
 
+void PianoRollWidget::set_canvas_rect(float x,
+                                      float y,
+                                      float width,
+                                      float height) noexcept {
+    canvas_origin_x_ = static_cast<double>(x);
+    canvas_origin_y_ = static_cast<double>(y);
+    canvas_width_ = static_cast<double>(width);
+    canvas_height_ = static_cast<double>(height);
+    canvas_rect_valid_ = true;
+}
+
 void PianoRollWidget::draw() {
 #ifdef PIANO_ROLL_USE_IMGUI
     ImGuiIO& io = ImGui::GetIO();
@@ -313,148 +324,222 @@ void PianoRollWidget::draw() {
         }
     }
 
-    // Fit viewport to available content area.
+    // NOTE: When an explicit canvas rect is provided, the host (panel) is
+    // responsible for setting the ImGui cursor position before calling draw().
+    // We do NOT call SetCursorScreenPos here to avoid mismatches between the
+    // panel's idea of the canvas start and this widget's internal coordinates.
+
+    // Fit viewport to available content area, with optional override from
+    // an explicit canvas rect (set_canvas_rect / draw_in_rect()).
     ImVec2 avail = ImGui::GetContentRegionAvail();
-    if (avail.x <= 0.0f || avail.y <= 0.0f) {
+    double width =
+        (forced_width_ > 0.0) ? forced_width_
+        : (canvas_rect_valid_ ? canvas_width_
+                              : static_cast<double>(avail.x));
+    double height =
+        (forced_height_ > 0.0) ? forced_height_
+        : (canvas_rect_valid_ ? canvas_height_
+                              : static_cast<double>(avail.y));
+    if (width <= 0.0 || height <= 0.0) {
         return;
     }
 
     Viewport& vp = coords_.viewport();
     vp.width =
-        static_cast<double>(avail.x) - coords_.piano_key_width();
+        width - coords_.piano_key_width();
     if (vp.width < 100.0) {
         vp.width = 100.0;
     }
-    vp.height = static_cast<double>(avail.y);
+
+    // Reserve vertical space at the bottom of the widget for the horizontal
+    // scrollbar and, when enabled, for the CC lane. The viewport height
+    // controls the note grid + piano-key area only.
+    double total_height = height;
+    float lane_height_px = 0.0f;
+    if (config_.show_cc_lane) {
+        lane_height_px = config_.cc_lane_height;
+        if (lane_height_px <= 0.0f ||
+            lane_height_px > static_cast<float>(total_height) * 0.8f) {
+            lane_height_px =
+                static_cast<float>(total_height) * 0.25f;
+        }
+    }
+    double reserved_bottom =
+        static_cast<double>(h_scrollbar_.track_size) +
+        static_cast<double>(lane_height_px);
+    double grid_height = total_height - reserved_bottom;
+    if (grid_height < 80.0) {
+        grid_height = std::max(40.0, total_height * 0.5);
+    }
+    vp.height = grid_height;
 
     // Ensure the explored area covers all notes so the scrollbar reflects
     // newly added content (mirrors Python _update_explored_area_for_notes).
     update_explored_area_for_notes();
 
-    // Update scrollbar geometry before rendering (uses current viewport).
-    update_scrollbar_geometry();
-
-    // Zoom control (px/beat) – kept for now; will converge to scrollbar-based
-    // zoom once all behaviours are ported.
-    {
-        double ppb = coords_.pixels_per_beat();
-        float zoom = static_cast<float>(ppb);
-        if (ImGui::SliderFloat("Zoom (px/beat)",
-                               &zoom,
-                               15.0f,
-                               4000.0f)) {
-            coords_.set_zoom(static_cast<double>(zoom));
-        }
-    }
-
-    // Snap settings (mode + division), mirroring the Python snap menu.
-    {
-        int mode_index = 0;
-        switch (snap_.snap_mode()) {
-        case SnapMode::Off:
-            mode_index = 0;
-            break;
-        case SnapMode::Adaptive:
-            mode_index = 1;
-            break;
-        case SnapMode::Manual:
-            mode_index = 2;
-            break;
-        }
-        const char* mode_labels[] = {
-            "Snap Off",
-            "Snap Adaptive",
-            "Snap Manual",
-        };
-        if (ImGui::Combo("Snap Mode",
-                         &mode_index,
-                         mode_labels,
-                         IM_ARRAYSIZE(mode_labels))) {
-            SnapMode new_mode = SnapMode::Adaptive;
-            if (mode_index == 0) {
-                new_mode = SnapMode::Off;
-            } else if (mode_index == 1) {
-                new_mode = SnapMode::Adaptive;
-            } else {
-                new_mode = SnapMode::Manual;
+    // Inline controls (zoom, snap, CC lane) - only shown when the widget is
+    // used standalone, not when embedded in a panel with its own chrome.
+    if (inline_controls_visible_) {
+        // Zoom control (px/beat) – kept for now; will converge to scrollbar-based
+        // zoom once all behaviours are ported.
+        {
+            double ppb = coords_.pixels_per_beat();
+            float zoom = static_cast<float>(ppb);
+            if (ImGui::SliderFloat("Zoom (px/beat)",
+                                   &zoom,
+                                   15.0f,
+                                   4000.0f)) {
+                coords_.set_zoom(static_cast<double>(zoom));
             }
-            snap_.set_snap_mode(new_mode);
         }
 
-        static const char* division_labels[] = {
-            "1/64",
-            "1/32",
-            "1/16",
-            "1/8",
-            "1/4",
-            "1/2",
-            "1 bar",
-            "2 bars",
-            "4 bars",
-        };
-        int current_div_index = 0;
-        const std::string& current_label =
-            snap_.snap_division().label;
-        for (int i = 0;
-             i < static_cast<int>(IM_ARRAYSIZE(division_labels));
-             ++i) {
-            if (current_label == division_labels[i]) {
-                current_div_index = i;
+        // Snap settings (mode + division), mirroring the Python snap menu.
+        {
+            int mode_index = 0;
+            switch (snap_.snap_mode()) {
+            case SnapMode::Off:
+                mode_index = 0;
+                break;
+            case SnapMode::Adaptive:
+                mode_index = 1;
+                break;
+            case SnapMode::Manual:
+                mode_index = 2;
                 break;
             }
-        }
-        if (ImGui::Combo("Snap Division",
-                         &current_div_index,
-                         division_labels,
-                         IM_ARRAYSIZE(division_labels))) {
-            const char* chosen =
-                division_labels[current_div_index];
-            snap_.set_snap_division(chosen);
-        }
-
-        // Display human-readable snap info (e.g. "Snap: ADAPTIVE (1/16)")
-        // similar to the Python status text.
-        ImGui::TextUnformatted(snap_.snap_info().c_str());
-    }
-
-    // CC lane selector (if any lanes are present).
-    if (!cc_lanes_.empty()) {
-        const char* combo_label = "CC Lane";
-        std::string preview;
-        if (config_.show_cc_lane && active_cc_lane_ >= 0 &&
-            active_cc_lane_ < static_cast<int>(cc_lanes_.size())) {
-            preview = "CC " + std::to_string(
-                                   cc_lanes_[static_cast<std::size_t>(
-                                       active_cc_lane_)]
-                                       .cc_number());
-        } else {
-            preview = "None";
-        }
-
-        if (ImGui::BeginCombo(combo_label, preview.c_str())) {
-            // "None" option hides the CC lane.
-            bool selected_none = !config_.show_cc_lane;
-            if (ImGui::Selectable("None", selected_none)) {
-                config_.show_cc_lane = false;
+            const char* mode_labels[] = {
+                "Snap Off",
+                "Snap Adaptive",
+                "Snap Manual",
+            };
+            if (ImGui::Combo("Snap Mode",
+                             &mode_index,
+                             mode_labels,
+                             IM_ARRAYSIZE(mode_labels))) {
+                SnapMode new_mode = SnapMode::Adaptive;
+                if (mode_index == 0) {
+                    new_mode = SnapMode::Off;
+                } else if (mode_index == 1) {
+                    new_mode = SnapMode::Adaptive;
+                } else {
+                    new_mode = SnapMode::Manual;
+                }
+                snap_.set_snap_mode(new_mode);
             }
 
-            for (std::size_t i = 0; i < cc_lanes_.size(); ++i) {
-                const int cc = cc_lanes_[i].cc_number();
-                std::string label = "CC " + std::to_string(cc);
-                bool is_selected =
-                    config_.show_cc_lane &&
-                    static_cast<int>(i) == active_cc_lane_;
-                if (ImGui::Selectable(label.c_str(), is_selected)) {
-                    active_cc_lane_ = static_cast<int>(i);
-                    config_.show_cc_lane = true;
+            static const char* division_labels[] = {
+                "1/64",
+                "1/32",
+                "1/16",
+                "1/8",
+                "1/4",
+                "1/2",
+                "1 bar",
+                "2 bars",
+                "4 bars",
+            };
+            int current_div_index = 0;
+            const std::string& current_label =
+                snap_.snap_division().label;
+            for (int i = 0;
+                 i < static_cast<int>(IM_ARRAYSIZE(division_labels));
+                 ++i) {
+                if (current_label == division_labels[i]) {
+                    current_div_index = i;
+                    break;
                 }
             }
-            ImGui::EndCombo();
+            if (ImGui::Combo("Snap Division",
+                             &current_div_index,
+                             division_labels,
+                             IM_ARRAYSIZE(division_labels))) {
+                const char* chosen =
+                    division_labels[current_div_index];
+                snap_.set_snap_division(chosen);
+            }
+
+            // Display human-readable snap info (e.g. "Snap: ADAPTIVE (1/16)")
+            // similar to the Python status text.
+            ImGui::TextUnformatted(snap_.snap_info().c_str());
+        }
+
+        // CC lane selector (if any lanes are present).
+        if (!cc_lanes_.empty()) {
+            const char* combo_label = "CC Lane";
+            std::string preview;
+            if (config_.show_cc_lane && active_cc_lane_ >= 0 &&
+                active_cc_lane_ < static_cast<int>(cc_lanes_.size())) {
+                preview = "CC " + std::to_string(
+                                       cc_lanes_[static_cast<std::size_t>(
+                                           active_cc_lane_)]
+                                           .cc_number());
+            } else {
+                preview = "None";
+            }
+
+            if (ImGui::BeginCombo(combo_label, preview.c_str())) {
+                // "None" option hides the CC lane.
+                bool selected_none = !config_.show_cc_lane;
+                if (ImGui::Selectable("None", selected_none)) {
+                    config_.show_cc_lane = false;
+                }
+
+                for (std::size_t i = 0; i < cc_lanes_.size(); ++i) {
+                    const int cc = cc_lanes_[i].cc_number();
+                    std::string label = "CC " + std::to_string(cc);
+                    bool is_selected =
+                        config_.show_cc_lane &&
+                        static_cast<int>(i) == active_cc_lane_;
+                    if (ImGui::Selectable(label.c_str(), is_selected)) {
+                        active_cc_lane_ = static_cast<int>(i);
+                        config_.show_cc_lane = true;
+                    }
+                }
+                ImGui::EndCombo();
+            }
         }
     }
 
-    // Render the piano roll.
+    // Render the piano roll. When an explicit canvas rect is provided,
+    // set the cursor position right before creating the InvisibleButton
+    // so that the ImGui item rect matches the host-supplied canvas origin.
+    if (canvas_rect_valid_) {
+        ImGui::SetCursorScreenPos(
+            ImVec2(static_cast<float>(canvas_origin_x_),
+                   static_cast<float>(canvas_origin_y_)));
+    }
     renderer_.render(coords_, notes_);
+
+    // Debug: visualize the internal piano roll canvas origin and the
+    // piano-key strip width using the ImGui item rect. This helps verify
+    // alignment between the widget's internal coordinates and the host panel.
+    {
+        ImDrawList* dl = ImGui::GetWindowDrawList();
+        ImVec2 canvas_min = ImGui::GetItemRectMin();
+        ImVec2 canvas_max = ImGui::GetItemRectMax();
+
+        ImU32 origin_col = ImGui::GetColorU32(
+            ImVec4(0.0f, 0.8f, 1.0f, 1.0f));
+        dl->AddLine(canvas_min,
+                    ImVec2(canvas_min.x, canvas_max.y),
+                    origin_col,
+                    1.0f);
+
+        float key_w =
+            static_cast<float>(coords_.piano_key_width());
+        float grid_x = canvas_min.x + key_w;
+        ImU32 grid_col = ImGui::GetColorU32(
+            ImVec4(1.0f, 0.2f, 0.2f, 1.0f));
+        dl->AddLine(ImVec2(grid_x, canvas_min.y),
+                    ImVec2(grid_x, canvas_max.y),
+                    grid_col,
+                    1.0f);
+    }
+
+    // Selection overlay should appear above notes but below chrome (scrollbar,
+    // CC lane) so grid selection rectangles do not paint over transport
+    // chrome. Draw it immediately after the main content.
+    RenderSelectionOverlay(notes_, pointer_, coords_, config_, &snap_);
 
     // Auto-scroll to keep playhead near edges when enabled.
     if (config_.playhead_auto_scroll && renderer_.has_playhead()) {
@@ -813,8 +898,10 @@ void PianoRollWidget::draw() {
         }
     }
 
-    // Render scrollbar on top.
+    // Render scrollbar on top. Update geometry after the main canvas item so
+    // that GetItemRect* refers to the piano roll area.
     {
+        update_scrollbar_geometry();
         ImDrawList* draw_list = ImGui::GetWindowDrawList();
         h_scrollbar_.render(draw_list);
     }
@@ -827,8 +914,7 @@ void PianoRollWidget::draw() {
         handle_keyboard_events();
     }
 
-    // Selection overlay and CC lane.
-    RenderSelectionOverlay(notes_, pointer_, coords_, config_, &snap_);
+    // CC lane.
     if (config_.show_cc_lane && active_cc_lane_ >= 0 &&
         active_cc_lane_ < static_cast<int>(cc_lanes_.size())) {
         RenderControlLane(
@@ -915,6 +1001,25 @@ void PianoRollWidget::draw() {
 #endif
 }
 
+void PianoRollWidget::draw_in_rect(float x,
+                                   float y,
+                                   float width,
+                                   float height) {
+#ifdef PIANO_ROLL_USE_IMGUI
+    if (width <= 0.0f || height <= 0.0f) {
+        return;
+    }
+    set_canvas_rect(x, y, width, height);
+    draw();
+    canvas_rect_valid_ = false;
+#else
+    (void)x;
+    (void)y;
+    (void)width;
+    (void)height;
+#endif
+}
+
 void PianoRollWidget::handle_pointer_events() {
 #ifdef PIANO_ROLL_USE_IMGUI
     ImGuiIO& io = ImGui::GetIO();
@@ -937,6 +1042,15 @@ void PianoRollWidget::handle_pointer_events() {
     }
     float lane_top_local = total_height - lane_height;
     float lane_bottom_local = total_height;
+
+    // Grid bottom (note area) sits above the horizontal scrollbar and, when
+    // enabled, above the CC lane. This mirrors the visual stack:
+    // grid -> scrollbar -> CC lane.
+    float grid_bottom_local = total_height;
+    if (config_.show_cc_lane) {
+        grid_bottom_local -= lane_height;
+    }
+    grid_bottom_local -= h_scrollbar_.track_size;
 
     ModifierKeys mods{
         .shift = io.KeyShift,
@@ -1320,7 +1434,7 @@ void PianoRollWidget::handle_pointer_events() {
             local_x >= static_cast<float>(coords_.piano_key_width());
         bool in_grid_y =
             local_y >= top_padding_ + ruler_height_ &&
-            (!config_.show_cc_lane || local_y < lane_top_local);
+            local_y < grid_bottom_local;
         if (in_grid_x && in_grid_y) {
             auto [world_x, world_y] =
                 coords_.screen_to_world(local_x, local_y);
@@ -1415,7 +1529,29 @@ void PianoRollWidget::handle_pointer_events() {
                                  lane_bottom_local,
                                  mods);
     } else {
-        if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+        // Avoid forwarding clicks that land on the horizontal scrollbar
+        // into the note grid / ruler. Scrollbar has its own handlers.
+        const auto& track_pos = h_scrollbar_.track_pos();
+        const auto& track_size_px = h_scrollbar_.track_size_px();
+        float sb_x1 = static_cast<float>(track_pos.first) - canvas_min.x;
+        float sb_y1 = static_cast<float>(track_pos.second) - canvas_min.y;
+        float sb_x2 = sb_x1 + static_cast<float>(track_size_px.first);
+        float sb_y2 = sb_y1 + static_cast<float>(track_size_px.second);
+        bool in_scrollbar =
+            (local_x >= sb_x1 && local_x <= sb_x2 &&
+             local_y >= sb_y1 && local_y <= sb_y2);
+
+        // Main note grid region (exclude ruler, note labels, piano keys, CC lane).
+        bool in_grid_x =
+            local_x >= static_cast<float>(coords_.piano_key_width());
+        bool in_grid_y =
+            local_y >= top_padding_ + ruler_height_ &&
+            (!config_.show_cc_lane || local_y < lane_top_local);
+        bool in_main_grid = in_grid_x && in_grid_y;
+
+        if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) &&
+            !in_scrollbar &&
+            in_main_grid) {
             pointer_.on_mouse_down(MouseButton::Left,
                                    local_x,
                                    local_y,
@@ -1433,7 +1569,8 @@ void PianoRollWidget::handle_pointer_events() {
             }
             pointer_.on_mouse_move(local_x, local_y, mods);
         }
-        if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
+        if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left) &&
+            in_main_grid) {
             pointer_.on_double_click(MouseButton::Left,
                                      local_x,
                                      local_y,
@@ -1755,8 +1892,10 @@ void PianoRollWidget::ensure_selected_notes_visible() {
 
 void PianoRollWidget::update_scrollbar_geometry() {
 #ifdef PIANO_ROLL_USE_IMGUI
-    // Use the current item rect (piano roll) to position the scrollbar
-    // at the bottom of the widget.
+    // Use the current item rect (piano roll canvas) to position the
+    // horizontal scrollbar. When a CC lane is visible, place the
+    // scrollbar directly above the lane; otherwise, align it with the
+    // bottom of the canvas.
     ImVec2 canvas_min = ImGui::GetItemRectMin();
     ImVec2 canvas_max = ImGui::GetItemRectMax();
 
@@ -1770,9 +1909,20 @@ void PianoRollWidget::update_scrollbar_geometry() {
                              static_cast<float>(coords_.piano_key_width()));
     int length = static_cast<int>(widget_width -
                                   static_cast<float>(coords_.piano_key_width()));
-    int y = static_cast<int>(canvas_max.y - h_scrollbar_.track_size);
+    float y = canvas_max.y - h_scrollbar_.track_size;
 
-    h_scrollbar_.update_geometry(x, y, length);
+    if (config_.show_cc_lane) {
+        float lane_height = config_.cc_lane_height;
+        if (lane_height <= 0.0f || lane_height > widget_height * 0.8f) {
+            lane_height = widget_height * 0.25f;
+        }
+        float lane_top = canvas_max.y - lane_height;
+        y = lane_top - h_scrollbar_.track_size;
+    }
+
+    h_scrollbar_.update_geometry(x,
+                                 static_cast<int>(y),
+                                 length);
 
     // Keep viewport size in sync with current view; explored range is
     // managed by the scrollbar handler.
